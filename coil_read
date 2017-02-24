@@ -1,0 +1,95 @@
+#include <LiquidCrystal.h>
+LiquidCrystal lcd(12, 11, 5, 4, 3, 2); //wyswietlacz
+
+
+int fire = 8;   // 3 glowne przyciski, fire - > wlaczenie mosfeta - > grzalki
+int b_up = 7;
+int b_down = 6;
+
+#define fire_pwm 10
+
+float coil = 0.10;
+int max_watts = 0;  //maksymalna ilosc watuff przy grzalce i 
+float batt = 0; //napiecie baterii, 4.08 przykladowo
+int batt_prc = 0; //procent naladowania baterii
+int wartosc_adc = 0;  // odczytanie adc pinu 5
+
+float moc = 0;  //ustawiona moc w watach       
+int prc = 0;  //procent mocy
+int set = 0; // aktualnie ustawiony zakres pwm
+
+byte battery[8] =  //bateria ikona
+{
+  0b01110,
+  0b11011,
+  0b10001,
+  0b10001,
+  0b10001,
+  0b10001,
+  0b10001,
+  0b11111
+};
+
+
+
+void setup() 
+{
+  lcd.begin(16, 2); 
+  lcd.createChar(2, battery);
+  lcd.clear();
+  pinMode(fire, INPUT);
+  pinMode(b_up, INPUT);
+  pinMode(b_down, INPUT);
+  pinMode(fire_pwm, OUTPUT);   //wyjscie mosfet -> grzalka
+}
+
+void loop()
+{
+  wartosc_adc = analogRead(A4);        // odczytanie adc pinu 5
+  batt = wartosc_adc * (5.0/1023.0);   //przeliczenie wartosci na napiecie
+
+  max_watts = batt*batt/coil;
+  prc = moc/(max_watts/100);
+  set = prc*2.55;
+
+  
+  
+   if ((digitalRead(fire) == HIGH) && (batt > 3.50))  //3.50, max dopuszczalne napiecie odciecia
+    {
+      analogWrite(fire_pwm, set);
+      delay(240);
+    }
+   else
+   {
+    {
+      digitalWrite(fire_pwm, LOW);
+    }
+
+   
+   if ((digitalRead(b_up) == HIGH) && (moc<max_watts))
+    {
+      moc++;
+      delay(20);
+    }
+
+   if ((digitalRead(b_down) == HIGH) && (moc>0))
+    {
+      moc=moc-1;
+      delay(20);
+    }
+   if (moc>max_watts)
+   {
+    moc=moc-1;
+   }
+
+        
+  lcd.setCursor(0,0);
+  lcd.print("Watts");
+  lcd.setCursor(0,2);
+  lcd.print(moc);
+  lcd.setCursor(11,0);
+  lcd.print(batt);
+
+  
+  }
+}
