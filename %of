@@ -1,0 +1,58 @@
+#include <LiquidCrystal.h>
+LiquidCrystal lcd(12, 11, 5 ,4, 3, 2); //wyswietlacz
+
+int fire = 8;   // 3 glowne przyciski, fire - > wlaczenie mosfeta - > grzalki
+int b_up = 7;
+int b_down = 6;
+#define fire_pwm 10
+int prc = 0;  //procent mocy
+int set = 0; // aktualnie ustawiony zakres pwm
+
+void setup() 
+{
+  lcd.begin(16, 2); 
+  lcd.clear();
+  pinMode(fire, INPUT);
+  pinMode(b_up, INPUT);
+  pinMode(b_down, INPUT);
+  pinMode(fire_pwm, OUTPUT);   //wyjscie mosfet -> grzalka
+}
+
+void loop()
+{
+  set = prc*2.55;
+   if ((digitalRead(fire) == HIGH)){       //3.50, max dopuszczalne napiecie odciecia
+      analogWrite(fire_pwm, prc);
+    }
+   else{
+    {
+      digitalWrite(fire_pwm, LOW);
+    }   
+   if ((digitalRead(b_up) == HIGH) && (prc<100)){                    //regulacja 0-100% plus czyszczenie wyswietlacza
+      prc++;                                                         //100% zastapic max_wat czy cos w ten desen
+      delay(20);
+    }
+   if ((digitalRead(b_down) == HIGH) && (prc>10) && (prc<=99)){
+      prc=prc-1;
+      delay(20);
+    }
+   if ((digitalRead(b_down) == HIGH) && (prc==100)){
+      prc=prc-1;
+      lcd.clear();
+      delay(20);
+    }
+   if ((digitalRead(b_down) == HIGH) && (prc==10)){
+      prc=prc-1;
+      lcd.clear();
+      delay(20);
+    }
+   if ((digitalRead(b_down) == HIGH) && (prc>0) && (prc<10)){
+      prc=prc-1;
+      delay(20);
+    }          
+   }
+  lcd.setCursor(0,0);
+  lcd.print("%");
+  lcd.setCursor(0,2);
+  lcd.print(prc);
+}
