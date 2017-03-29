@@ -1,58 +1,73 @@
 #include <LiquidCrystal.h>
-LiquidCrystal lcd(12, 11, 5 ,4, 3, 2); //wyswietlacz
-
-int fire = 8;   // 3 glowne przyciski, fire - > wlaczenie mosfeta - > grzalki
+LiquidCrystal lcd(12, 11, 5 ,4, 3, 2);
+int fire = 8;         // 3 glowne przyciski, fire - > mosfet - > grzalka
 int b_up = 7;
-int b_down = 6;
+int b_down = 6;    
 #define fire_pwm 10
-int prc = 0;  //procent mocy
-int set = 0; // aktualnie ustawiony zakres pwm
 
-void setup() 
-{
+float b1 = 12.41;      //
+float b2 = 0;          //   Bateria
+float vbatt = 0;       //
+
+float coil = 0.50; 
+
+float max_watts = 0;    //
+float set_watts = 0;    //   Regulacja Watow
+float watts = 0;        //
+            
+int prc = 0;            // Przeksztalcanie na pwm
+int pwm = 0;
+                        
+ 
+
+void setup() {
   lcd.begin(16, 2); 
   lcd.clear();
+  pinMode(fire_pwm, OUTPUT);
   pinMode(fire, INPUT);
   pinMode(b_up, INPUT);
   pinMode(b_down, INPUT);
-  pinMode(fire_pwm, OUTPUT);   //wyjscie mosfet -> grzalka
+  lcd.setCursor(0,0);
+  lcd.print("Loadnig system");
+  delay(3200);
+  lcd.clear();
 }
 
-void loop()
-{
-  set = prc*2.55;
-   if ((digitalRead(fire) == HIGH)){       //3.50, max dopuszczalne napiecie odciecia
-      analogWrite(fire_pwm, prc);
-    }
-   else{
-    {
-      digitalWrite(fire_pwm, LOW);
-    }   
-   if ((digitalRead(b_up) == HIGH) && (prc<100)){                    //regulacja 0-100% plus czyszczenie wyswietlacza
-      prc++;                                                         //100% zastapic max_wat czy cos w ten desen
-      delay(20);
-    }
-   if ((digitalRead(b_down) == HIGH) && (prc>10) && (prc<=99)){
-      prc=prc-1;
-      delay(20);
-    }
-   if ((digitalRead(b_down) == HIGH) && (prc==100)){
-      prc=prc-1;
-      lcd.clear();
-      delay(20);
-    }
-   if ((digitalRead(b_down) == HIGH) && (prc==10)){
-      prc=prc-1;
-      lcd.clear();
-      delay(20);
-    }
-   if ((digitalRead(b_down) == HIGH) && (prc>0) && (prc<10)){
-      prc=prc-1;
-      delay(20);
-    }          
-   }
+void loop(){
+  obliczenia();
+  if ((digitalRead(b_up) == HIGH) && (set_watts<max_watts)){
+    set_watts++;
+    delay(20);
+  }
+  if ((digitalRead(b_down) == HIGH) && (set_watts>0)){
+    set_watts--;
+    delay(20);
+  }  
+  if(max_watts<set_watts){
+    set_watts--;
+  }
+
+
+
+
+  
+}
+
+
+void obliczenia(){
+  vbatt=b1+b2;
+  max_watts = vbatt*vbatt/coil;
+  prc = set_watts/(max_watts/100); 
+  pwm = prc*2.55;
+
+
+
+  lcd.setCursor(7,0);
+  lcd.print("Watts");
   lcd.setCursor(0,0);
-  lcd.print("%");
+  lcd.print(max_watts);
   lcd.setCursor(0,2);
+  lcd.print(set_watts);
+  lcd.setCursor(8,2);
   lcd.print(prc);
 }
