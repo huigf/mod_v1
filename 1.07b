@@ -1,0 +1,184 @@
+#include <LiquidCrystal.h>
+LiquidCrystal lcd(12, 11, 5 ,4, 3, 2);
+int fire = 8;           //
+int b_up = 7;           //   Przyciski
+int b_down = 6;         // 
+int przerwanie = 9;
+
+float b1 = 6.21;        //
+float b2 = 6.20;        //   Bateria
+float vbatt = 0;        //
+
+float coilR = 1.3; 
+
+float max_watts = 0;    //
+float set_watts = 0;    //   Regulacja Watow
+float watts = 0;        //
+            
+int prc = 0;            //
+int pwm = 0;            //   Przeksztalcanie na pwm
+#define fire_pwm 10     //                    
+
+int i = 0;
+float czas = 0;
+
+int blc = 0;   //menu
+int blc2 = 0;  //wyborow
+
+void setup() {                    // setup
+  lcd.begin(16, 2); 
+  lcd.clear();
+  pinMode(fire_pwm, OUTPUT);
+  pinMode(fire, INPUT);
+  pinMode(b_up, INPUT);
+  pinMode(b_down, INPUT);
+  lcd.setCursor(0,0);
+  pinMode(przerwanie,INPUT);
+}
+
+// todo
+//  - zapis rezystancji do EEPROM
+//  - blokada rezystancji ON OFF + lock .io
+//  - strzaleczki w menu 
+//
+// Pomiar napiecia baterii, grzalki
+void zmienne(){
+  
+}
+void WattageControl(){
+  while(true){
+    if((digitalRead(fire) == HIGH) && (b1 > 3.50) && (b2 > 3.50)){   //Uruchamianie grzalki   
+      analogWrite(fire_pwm, pwm);
+    }
+    else{
+      digitalWrite(fire_pwm,LOW);
+    }
+  
+    if((digitalRead(b_up) == HIGH) && (set_watts<max_watts) && (digitalRead(b_down) == LOW)){        //Ustawianie watów
+      set_watts++;
+      delay(20);
+    }
+    if((digitalRead(b_down) == HIGH) && (set_watts>0) && (digitalRead(b_up) == LOW)){
+      set_watts--;
+      delay(20);
+    }
+
+    if(digitalRead(przerwanie) == HIGH){   //przerywanie petli, zastapic trzy kilkiem
+      lcd.clear();
+      break;    
+    }
+    
+    if(max_watts<set_watts){set_watts--;}
+   
+    vbatt=b1+b2;   //bateria
+    
+    max_watts = vbatt*vbatt/coilR;
+    prc = set_watts/(max_watts/100); 
+    pwm = prc*2.55;
+  
+    lcd.setCursor(7,2);
+    lcd.print("Watts");
+    lcd.setCursor(0,0);
+    lcd.print(max_watts);
+    lcd.setCursor(0,2);
+    lcd.print(set_watts);
+  }
+}
+
+void ByPass(){
+  while(true){
+    if((digitalRead(fire) == HIGH) && (b1 > 3.50) && (b2 > 3.50)){
+      digitalWrite(fire_pwm,HIGH);
+    }
+    else{
+      digitalWrite(fire_pwm,LOW);
+    }
+    if(digitalRead(przerwanie) == HIGH){   //przerywanie petli, zastapic trzy kilkiem
+      lcd.clear();
+      break;    
+    }
+    vbatt=b1+b2;
+    max_watts = vbatt*vbatt/coilR;
+    lcd.setCursor(0,0);
+    lcd.print(max_watts);
+    lcd.setCursor(0,2);
+    lcd.print("ByPass mode");
+  } 
+}
+
+
+void ustawienia(){
+  while(true){
+    lcd.clear();
+    lcd.setCursor(0,0);
+    lcd.print("Ustawienia Here");
+    if(digitalRead(przerwanie) == HIGH){   //przerywanie petli, zastapic trzy kilkiem
+      lcd.clear();
+      break;    
+    }
+  }
+}
+
+
+void loop(){
+  //zmiana trybow do wyboru
+  if((digitalRead(b_up) == HIGH) && (i<3)){          //zmiana trybów w prawo
+    blc = 1;
+  }
+  if((digitalRead(b_up) == LOW) && (blc==1)){
+    lcd.clear();    
+    i++;
+    blc = 0;     
+  }
+  if((digitalRead(b_down) == HIGH) && (i>0)){        //zmiana trybow w lewo
+    blc2 = 1;
+  }  
+  if((digitalRead(b_down) == LOW) && (blc2==1)){
+    lcd.clear();   
+    i--;
+    blc2 = 0;     
+  }                                               
+  
+  if(i==0){                              // tryb kontroli watow 
+    lcd.setCursor(0,0);
+    lcd.print("Kontrola Watow");
+    if(digitalRead(fire) == HIGH){       // uruchamianie kontroli watow    
+      lcd.clear();
+      WattageControl();      
+    }
+  }
+  if(i==1){                              // tryb bypass                   
+    lcd.setCursor(0,0); 
+    lcd.print("Tryb ByPass");      
+    if(digitalRead(fire) == HIGH){       // uruchamianie ByPassu
+      lcd.clear();    
+      ByPass();             
+    }    
+  }
+  if(i==2){                              // Informacje o systemie
+    lcd.setCursor(0,0);               
+    lcd.print("Informacje");
+    lcd.setCursor(0,2);
+    lcd.print("os prot 1.07c");
+    if(digitalRead(fire) == HIGH){     // wiecej informacji
+      lcd.clear();
+      while(true){
+        lcd.setCursor(0,0);
+        lcd.print("kc martynee");       //example ;p
+        if(digitalRead(przerwanie) == HIGH){   //przerywanie petli, zastapic trzy kilkiem
+          lcd.clear();
+          break;      
+        }   
+      }    //koniec     //koniec     //koniec     //koniec     //koniec 
+    }
+  }
+  if(i==3){                              // Ustawienia
+    lcd.setCursor(0,0);               
+    lcd.print("Ustawienia");
+    lcd.setCursor(0,2);
+    lcd.print("Kliknij tutaj"); 
+    if(digitalRead(fire) == HIGH){       // wiecej ustawien
+      ustawienia();      
+    }         
+  }  
+}
